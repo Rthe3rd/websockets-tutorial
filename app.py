@@ -158,6 +158,12 @@ def process_request(connection, request):
     # Extract path from request object
     path = request.path
     
+    # Check if this is a WebSocket upgrade request - if so, let websockets handle it
+    # WebSocket upgrade requests have "Upgrade: websocket" header
+    upgrade_header = request.headers.get("upgrade", "")
+    if upgrade_header and "websocket" in upgrade_header.lower():
+        return None  # Let websockets library handle the upgrade
+    
     # Serve index.html for root path
     if path == '/' or path == '':
         html_path = base_dir / "index.html"
