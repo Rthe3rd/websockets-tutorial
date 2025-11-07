@@ -76,7 +76,10 @@ function receiveMoves(board, websocket) {
     const board = document.querySelector(".board");
     createBoard(board);
     // Open the WebSocket connection and register event handlers.
-    const websocket = new WebSocket("ws://localhost:8001/");
+    // Use wss:// for HTTPS (Heroku) or ws:// for HTTP (local development)
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${window.location.host}/`;
+    const websocket = new WebSocket(wsUrl);
     initGame(websocket);
     receiveMoves(board, websocket);
     sendMoves(board, websocket);

@@ -1,13 +1,15 @@
 import asyncio
 import json
-import itertools
 import secrets
+import os
+import http
+from pathlib import Path
 
-from websockets.asyncio.server import serve, broadcast
+from websockets.asyncio.server import serve
+from websockets import broadcast as ws_broadcast
 from connect4 import PLAYER1, PLAYER2, Connect4
 
 import logging
-from websockets.exceptions import ConnectionClosedOK
 
 JOIN = {}
 WATCH = {}
@@ -101,7 +103,7 @@ async def start(websocket):
 
 async def play(websocket, game, player, connected):
     async for message in websocket:
-        # Parse play even from UI
+        # Parse play event from UI
         event = json.loads(message)
         assert event['type'] == 'play'
         column = event['column']
@@ -119,8 +121,8 @@ async def play(websocket, game, player, connected):
         event['player'] = player
         event['row'] = row
 
-        # Send the "play event" to UI
-        broadcast(connected, json.dumps(event))
+        # Send the "play event" to UI using websockets broadcast
+        ws_broadcast(connected, json.dumps(event))
 
         # If the last move won
         if game.winner is not None:
@@ -128,7 +130,7 @@ async def play(websocket, game, player, connected):
                 "type": "win",
                 "player": game.winner,
             }
-            broadcast(connected, json.dumps(event))
+            ws_broadcast(connected, json.dumps(event))
 
 
 async def handler(websocket):
@@ -141,15 +143,56 @@ async def handler(websocket):
         # second player joins existing game.
         await join(websocket, event['join'])
     elif "watch" in event:
-        await join(websocket, event['watch'])
-
+        await watch(websocket, event['watch'])
     else:
         # First player starts a new game
         await start(websocket)
 
+
+async def process_request(path, request_headers):
+    """Handle HTTP requests for static files"""
+    base_dir = Path(__file__).parent
+    
+    # Serve index.html for root path
+    if path == '/' or path == '':
+        html_path = base_dir / "index.html"
+        if html_path.exists():
+            content = html_path.read_bytes()
+            return (
+                http.HTTPStatus.OK,
+                [("Content-Type", "text/html")],
+                content
+            )
+    
+    # Remove leading slash for file lookup
+    filename = path.lstrip('/')
+    
+    # Only serve .js and .css files for security
+    if not (filename.endswith('.js') or filename.endswith('.css')):
+        return None  # Let websockets handle it (will return 404)
+    
+    file_path = base_dir / filename
+    
+    if not file_path.exists() or not file_path.is_file():
+        return None  # Let websockets handle it (will return 404)
+    
+    # Set appropriate content type
+    content_type = "text/javascript" if filename.endswith(".js") else "text/css"
+    
+    return (
+        http.HTTPStatus.OK,
+        [("Content-Type", content_type)],
+        file_path.read_bytes()
+    )
+
+
 async def main():
+    # Get port from environment variable (Heroku sets this)
+    port = int(os.environ.get('PORT', 8001))
+    
     try:
-        async with serve(handler, "", 8001) as server:
+        async with serve(handler, "0.0.0.0", port, process_request=process_request) as server:
+            print(f'Server started on port {port}')
             await server.serve_forever()
     except asyncio.CancelledError:
         print('Context cancelled, shutting down gracefully...')
