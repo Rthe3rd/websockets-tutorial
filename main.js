@@ -76,7 +76,8 @@ function receiveMoves(board, websocket) {
     const board = document.querySelector(".board");
     createBoard(board);
     // Open the WebSocket connection and register event handlers.
-    const websocket = new WebSocket("ws://localhost:8001/");
+    const protocol = window.location.protocol === "https:" ? "wss" : "ws";
+    const websocket = new WebSocket(`${protocol}://${window.location.host}/`);
     initGame(websocket);
     receiveMoves(board, websocket);
     sendMoves(board, websocket);
