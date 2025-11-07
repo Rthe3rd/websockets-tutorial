@@ -149,9 +149,12 @@ async def handler(websocket):
         await start(websocket)
 
 
-async def process_request(connection, path, request_headers):
+def process_request(connection, request):
     """Handle HTTP requests for static files"""
     base_dir = Path(__file__).parent
+    
+    # Extract path from request object
+    path = request.path
     
     # Serve index.html for root path
     if path == '/' or path == '':
