@@ -8,6 +8,7 @@ from pathlib import Path
 from websockets.asyncio.server import serve
 from websockets import broadcast as ws_broadcast
 from websockets.http import Headers
+from websockets.server import Response
 from connect4 import PLAYER1, PLAYER2, Connect4
 
 import logging
@@ -162,17 +163,19 @@ def process_request(connection, request):
         html_path = base_dir / "index.html"
         if html_path.exists():
             content = html_path.read_bytes()
-            return (
-                200,
-                Headers([("Content-Type", "text/html")]),
-                content
+            return Response(
+                status_code=200,
+                reason_phrase="OK",
+                headers=Headers([("Content-Type", "text/html")]),
+                body=content
             )
         else:
             # Return 404 if index.html doesn't exist
-            return (
-                404,
-                Headers([("Content-Type", "text/plain")]),
-                b"Not Found"
+            return Response(
+                status_code=404,
+                reason_phrase="Not Found",
+                headers=Headers([("Content-Type", "text/plain")]),
+                body=b"Not Found"
             )
     
     # Remove leading slash for file lookup
@@ -181,29 +184,32 @@ def process_request(connection, request):
     # Only serve .js and .css files for security
     if not (filename.endswith('.js') or filename.endswith('.css')):
         # Return 404 for non-JS/CSS files
-        return (
-            404,
-            Headers([("Content-Type", "text/plain")]),
-            b"Not Found"
+        return Response(
+            status_code=404,
+            reason_phrase="Not Found",
+            headers=Headers([("Content-Type", "text/plain")]),
+            body=b"Not Found"
         )
     
     file_path = base_dir / filename
     
     if not file_path.exists() or not file_path.is_file():
         # Return 404 if file doesn't exist
-        return (
-            404,
-            Headers([("Content-Type", "text/plain")]),
-            b"Not Found"
+        return Response(
+            status_code=404,
+            reason_phrase="Not Found",
+            headers=Headers([("Content-Type", "text/plain")]),
+            body=b"Not Found"
         )
     
     # Set appropriate content type
     content_type = "text/javascript" if filename.endswith(".js") else "text/css"
     
-    return (
-        200,
-        Headers([("Content-Type", content_type)]),
-        file_path.read_bytes()
+    return Response(
+        status_code=200,
+        reason_phrase="OK",
+        headers=Headers([("Content-Type", content_type)]),
+        body=file_path.read_bytes()
     )
 
 
