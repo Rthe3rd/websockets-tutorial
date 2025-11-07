@@ -7,7 +7,7 @@ from pathlib import Path
 
 from websockets.asyncio.server import serve
 from websockets import broadcast as ws_broadcast
-from websockets.http import Headers, Response
+from websockets.http import Headers
 from connect4 import PLAYER1, PLAYER2, Connect4
 
 import logging
@@ -162,10 +162,10 @@ def process_request(connection, request):
         html_path = base_dir / "index.html"
         if html_path.exists():
             content = html_path.read_bytes()
-            return Response(
-                status_code=200,
-                headers=Headers([("Content-Type", "text/html")]),
-                body=content
+            return (
+                200,
+                Headers([("Content-Type", "text/html")]),
+                content
             )
     
     # Remove leading slash for file lookup
@@ -183,10 +183,10 @@ def process_request(connection, request):
     # Set appropriate content type
     content_type = "text/javascript" if filename.endswith(".js") else "text/css"
     
-    return Response(
-        status_code=200,
-        headers=Headers([("Content-Type", content_type)]),
-        body=file_path.read_bytes()
+    return (
+        200,
+        Headers([("Content-Type", content_type)]),
+        file_path.read_bytes()
     )
 
 
