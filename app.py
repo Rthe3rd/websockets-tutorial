@@ -149,7 +149,7 @@ async def handler(websocket):
         await start(websocket)
 
 
-async def process_request(path, request_headers):
+async def process_request(connection, path, request_headers):
     """Handle HTTP requests for static files"""
     base_dir = Path(__file__).parent
     
