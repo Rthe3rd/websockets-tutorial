@@ -158,8 +158,11 @@ def process_request(connection, request):
     """Handle HTTP requests for static files"""
     base_dir = Path(__file__).parent
     
-    # Extract path from request object
+    # Extract path from request object and strip query string
     path = request.path
+    # Remove query string if present (e.g., "/?join=abc" -> "/")
+    if '?' in path:
+        path = path.split('?')[0]
     
     # Check if this is a WebSocket upgrade request - if so, let websockets handle it
     # WebSocket upgrade requests have "Upgrade: websocket" header
@@ -168,9 +171,9 @@ def process_request(connection, request):
         return None  # Let websockets library handle the upgrade
     
     # Log the path for debugging
-    logging.info(f"HTTP request path: {path}")
+    logging.info(f"HTTP request path: {request.path} -> normalized: {path}")
     
-    # Serve index.html for root path (query parameters don't affect the path)
+    # Serve index.html for root path
     if path == '/' or path == '':
         html_path = base_dir / "index.html"
         if html_path.exists():
