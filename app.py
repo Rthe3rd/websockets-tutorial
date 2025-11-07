@@ -167,18 +167,35 @@ def process_request(connection, request):
                 Headers([("Content-Type", "text/html")]),
                 content
             )
+        else:
+            # Return 404 if index.html doesn't exist
+            return (
+                404,
+                Headers([("Content-Type", "text/plain")]),
+                b"Not Found"
+            )
     
     # Remove leading slash for file lookup
     filename = path.lstrip('/')
     
     # Only serve .js and .css files for security
     if not (filename.endswith('.js') or filename.endswith('.css')):
-        return None  # Let websockets handle it (will return 404)
+        # Return 404 for non-JS/CSS files
+        return (
+            404,
+            Headers([("Content-Type", "text/plain")]),
+            b"Not Found"
+        )
     
     file_path = base_dir / filename
     
     if not file_path.exists() or not file_path.is_file():
-        return None  # Let websockets handle it (will return 404)
+        # Return 404 if file doesn't exist
+        return (
+            404,
+            Headers([("Content-Type", "text/plain")]),
+            b"Not Found"
+        )
     
     # Set appropriate content type
     content_type = "text/javascript" if filename.endswith(".js") else "text/css"
@@ -194,8 +211,18 @@ async def main():
     # Get port from environment variable (Heroku sets this)
     port = int(os.environ.get('PORT', 8001))
     
+    # Suppress connection errors from health checks
+    logging.getLogger("websockets.server").setLevel(logging.WARNING)
+    
     try:
-        async with serve(handler, "0.0.0.0", port, process_request=process_request) as server:
+        async with serve(
+            handler, 
+            "0.0.0.0", 
+            port, 
+            process_request=process_request,
+            # Suppress errors from connections that close immediately
+            logger=logging.getLogger("websockets")
+        ) as server:
             print(f'Server started on port {port}')
             await server.serve_forever()
     except asyncio.CancelledError:
