@@ -100,8 +100,11 @@ async def start(websocket):
         await play(websocket, game, PLAYER1, connected)
 
     finally:
-        del JOIN[join_key]
-        del WATCH[watch_key]
+        # Clean up both keys from JOIN (both are stored there)
+        if join_key in JOIN:
+            del JOIN[join_key]
+        if watch_key in JOIN:
+            del JOIN[watch_key]
 
 async def play(websocket, game, player, connected):
     async for message in websocket:
@@ -167,7 +170,7 @@ def process_request(connection, request):
     # Log the path for debugging
     logging.info(f"HTTP request path: {path}")
     
-    # Serve index.html for root path (with or without query parameters)
+    # Serve index.html for root path (query parameters don't affect the path)
     if path == '/' or path == '':
         html_path = base_dir / "index.html"
         if html_path.exists():
