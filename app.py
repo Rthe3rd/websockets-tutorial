@@ -164,7 +164,10 @@ def process_request(connection, request):
     if upgrade_header and "websocket" in upgrade_header.lower():
         return None  # Let websockets library handle the upgrade
     
-    # Serve index.html for root path
+    # Log the path for debugging
+    logging.info(f"HTTP request path: {path}")
+    
+    # Serve index.html for root path (with or without query parameters)
     if path == '/' or path == '':
         html_path = base_dir / "index.html"
         if html_path.exists():
